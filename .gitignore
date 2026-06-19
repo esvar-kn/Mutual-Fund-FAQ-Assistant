@@ -31,9 +31,3 @@ MANIFEST
 .DS_Store
 Thumbs.db
 
-# Vector store & local corpus data (generated on the fly by pipeline)
-data/Corpus/raw/
-data/Corpus/processed/
-data/Corpus/chunks.json
-data/Corpus/embeddings.json
-data/chromadb/
