@@ -11,6 +11,8 @@ jobs:
   ingest:
     name: Run Ingestion & Rebuild Index
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
 
     steps:
       - name: Checkout Code
