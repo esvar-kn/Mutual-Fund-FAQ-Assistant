@@ -1,0 +1,115 @@
+{
+  "embedding_model": "BAAI/bge-small-en-v1.5",
+  "groq_model": "llama-3.1-8b-instant",
+  "amcs": [
+    {
+      "amc_name": "HDFC Mutual Fund",
+      "schemes": [
+        {
+          "name": "HDFC Mid-Cap Opportunities Fund",
+          "category": "Mid Cap",
+          "url": "https://groww.in/mutual-funds/hdfc-mid-cap-fund-direct-growth",
+          "official_links": {
+            "sid": "https://www.hdfcfund.com/investor-services/fund-documents/scheme-information-documents/hdfc-mid-cap-opportunities-fund-sid",
+            "kim": "https://www.hdfcfund.com/investor-services/fund-documents/key-information-memorandum/hdfc-mid-cap-opportunities-fund-kim",
+            "factsheet": "https://www.hdfcfund.com/investor-services/fund-documents/factsheet/hdfc-mid-cap-opportunities-fund-factsheet"
+          }
+        },
+        {
+          "name": "HDFC Small Cap Fund",
+          "category": "Small Cap",
+          "url": "https://groww.in/mutual-funds/hdfc-small-cap-fund-direct-growth",
+          "official_links": {
+            "sid": "https://www.hdfcfund.com/investor-services/fund-documents/scheme-information-documents/hdfc-small-cap-fund-sid",
+            "kim": "https://www.hdfcfund.com/investor-services/fund-documents/key-information-memorandum/hdfc-small-cap-fund-kim",
+            "factsheet": "https://www.hdfcfund.com/investor-services/fund-documents/factsheet/hdfc-small-cap-fund-factsheet"
+          }
+        },
+        {
+          "name": "HDFC Gold ETF Fund of Fund",
+          "category": "Gold / Commodity",
+          "url": "https://groww.in/mutual-funds/hdfc-gold-etf-fund-of-fund-direct-plan-growth",
+          "official_links": {
+            "sid": "https://www.hdfcfund.com/investor-services/fund-documents/scheme-information-documents/hdfc-gold-etf-fund-of-fund-sid",
+            "kim": "https://www.hdfcfund.com/investor-services/fund-documents/key-information-memorandum/hdfc-gold-etf-fund-of-fund-kim",
+            "factsheet": "https://www.hdfcfund.com/investor-services/fund-documents/factsheet/hdfc-gold-etf-fund-of-fund-factsheet"
+          }
+        },
+        {
+          "name": "HDFC Multi Cap Fund",
+          "category": "Multi Cap",
+          "url": "https://groww.in/mutual-funds/hdfc-multi-cap-fund-direct-growth",
+          "official_links": {
+            "sid": "https://www.hdfcfund.com/investor-services/fund-documents/scheme-information-documents/hdfc-multi-cap-fund-sid",
+            "kim": "https://www.hdfcfund.com/investor-services/fund-documents/key-information-memorandum/hdfc-multi-cap-fund-kim",
+            "factsheet": "https://www.hdfcfund.com/investor-services/fund-documents/factsheet/hdfc-multi-cap-fund-factsheet"
+          }
+        },
+        {
+          "name": "HDFC Large Cap Fund",
+          "category": "Large Cap",
+          "url": "https://groww.in/mutual-funds/hdfc-large-cap-fund-direct-growth",
+          "official_links": {
+            "sid": "https://www.hdfcfund.com/investor-services/fund-documents/scheme-information-documents/hdfc-large-cap-fund-sid",
+            "kim": "https://www.hdfcfund.com/investor-services/fund-documents/key-information-memorandum/hdfc-large-cap-fund-kim",
+            "factsheet": "https://www.hdfcfund.com/investor-services/fund-documents/factsheet/hdfc-large-cap-fund-factsheet"
+          }
+        }
+      ]
+    },
+    {
+      "amc_name": "SBI Mutual Fund",
+      "schemes": [
+        {
+          "name": "SBI Magnum Multiplier Fund",
+          "category": "Large & Mid Cap",
+          "url": "https://groww.in/mutual-funds/sbi-magnum-multiplier-fund-direct-growth",
+          "official_links": {
+            "sid": "https://www.sbimf.com/en-us/offer-document-sid-kim",
+            "kim": "https://www.sbimf.com/en-us/offer-document-sid-kim",
+            "factsheet": "https://www.sbimf.com/en-us/factsheets"
+          }
+        },
+        {
+          "name": "SBI Small & Midcap Fund",
+          "category": "Small Cap",
+          "url": "https://groww.in/mutual-funds/sbi-small-midcap-fund-direct-growth",
+          "official_links": {
+            "sid": "https://www.sbimf.com/en-us/offer-document-sid-kim",
+            "kim": "https://www.sbimf.com/en-us/offer-document-sid-kim",
+            "factsheet": "https://www.sbimf.com/en-us/factsheets"
+          }
+        },
+        {
+          "name": "SBI Pharma Fund",
+          "category": "Sectoral / Thematic",
+          "url": "https://groww.in/mutual-funds/sbi-pharma-fund-direct-growth",
+          "official_links": {
+            "sid": "https://www.sbimf.com/en-us/offer-document-sid-kim",
+            "kim": "https://www.sbimf.com/en-us/offer-document-sid-kim",
+            "factsheet": "https://www.sbimf.com/en-us/factsheets"
+          }
+        },
+        {
+          "name": "SBI Gold Fund",
+          "category": "Gold / Commodity",
+          "url": "https://groww.in/mutual-funds/sbi-gold-fund-direct-growth",
+          "official_links": {
+            "sid": "https://www.sbimf.com/en-us/offer-document-sid-kim",
+            "kim": "https://www.sbimf.com/en-us/offer-document-sid-kim",
+            "factsheet": "https://www.sbimf.com/en-us/factsheets"
+          }
+        }
+      ]
+    }
+  ],
+  "official_guidance_links": {
+    "amc_faq": "https://www.hdfcfund.com/help-support/faqs",
+    "sip_faq": "https://www.hdfcfund.com/help-support/faqs/sip-faqs",
+    "redemption_faq": "https://www.hdfcfund.com/help-support/faqs/redemption-faqs",
+    "account_statement_guide": "https://www.hdfcfund.com/investor-services/account-statement/download-statement",
+    "tax_statement_guide": "https://www.hdfcfund.com/investor-services/tax-services/capital-gains-statement",
+    "amfi_education": "https://www.amfiindia.com/investor-corner",
+    "sebi_education": "https://www.sebi.gov.in/sebiweb/other/OtherAction.do?doInvestor=yes"
+  }
+}

@@ -1,0 +1,10 @@
+streamlit
+groq
+chromadb
+pdfplumber
+beautifulsoup4
+requests
+sentence-transformers
+python-dotenv
+fastapi
+uvicorn

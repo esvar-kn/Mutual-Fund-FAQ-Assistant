@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html class="light" lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>Mutual Fund FAQ Assistant | Facts-Only Dashboard</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&amp;family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+    <style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .glass-card {
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+        @keyframes pulse-green {
+            0% { box-shadow: 0 0 0 0 rgba(0, 208, 156, 0.4); }
+            70% { box-shadow: 0 0 0 10px rgba(0, 208, 156, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(0, 208, 156, 0); }
+        }
+        .pulse-badge {
+            animation: pulse-green 2s infinite;
+        }
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #bacac1;
+            border-radius: 10px;
+        }
+        .dark ::-webkit-scrollbar-thumb {
+            background: #3c4a43;
+        }
+    </style>
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "error": "#ba1a1a",
+                        "surface-container-highest": "#e1e3e4",
+                        "surface": "#f8f9fa",
+                        "on-primary-fixed-variant": "#00513b",
+                        "on-tertiary-fixed-variant": "#3e4660",
+                        "tertiary-container": "#afb6d6",
+                        "error-container": "#ffdad6",
+                        "on-tertiary-container": "#404762",
+                        "on-error": "#ffffff",
+                        "on-secondary": "#ffffff",
+                        "on-secondary-fixed-variant": "#3d4664",
+                        "primary-fixed": "#59fdc5",
+                        "on-secondary-fixed": "#111a36",
+                        "secondary-fixed": "#dbe1ff",
+                        "outline": "#6b7b72",
+                        "on-primary-container": "#00533c",
+                        "secondary": "#545d7c",
+                        "surface-container": "#edeeef",
+                        "primary-container": "#00d09c",
+                        "secondary-fixed-dim": "#bdc5e9",
+                        "surface-container-low": "#f3f4f5",
+                        "secondary-container": "#d0d9fd",
+                        "on-error-container": "#93000a",
+                        "on-secondary-container": "#555e7d",
+                        "surface-dim": "#d9dadb",
+                        "tertiary-fixed": "#dbe1ff",
+                        "tertiary-fixed-dim": "#bec5e5",
+                        "inverse-on-surface": "#f0f1f2",
+                        "on-surface": "#191c1d",
+                        "on-background": "#191c1d",
+                        "outline-variant": "#bacac1",
+                        "on-tertiary": "#ffffff",
+                        "surface-container-high": "#e7e8e9",
+                        "surface-container-lowest": "#ffffff",
+                        "on-primary-fixed": "#002116",
+                        "surface-tint": "#006c4f",
+                        "surface-variant": "#e1e3e4",
+                        "on-surface-variant": "#3c4a43",
+                        "primary-fixed-dim": "#2fe0aa",
+                        "on-primary": "#ffffff",
+                        "surface-bright": "#f8f9fa",
+                        "primary": "#006c4f",
+                        "background": "#f8f9fa",
+                        "inverse-primary": "#2fe0aa",
+                        "inverse-surface": "#2e3132",
+                        "tertiary": "#565d79",
+                        "on-tertiary-fixed": "#131a33",
+                        "dark-base": "#0B132B",
+                        "dark-container": "#1C2541"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "stack-sm": "8px",
+                        "stack-lg": "32px",
+                        "base": "4px",
+                        "container-padding-desktop": "24px",
+                        "stack-md": "16px",
+                        "gutter": "16px",
+                        "container-padding-mobile": "16px"
+                    },
+                    "fontFamily": {
+                        "headline-lg": ["Outfit"],
+                        "headline-lg-mobile": ["Outfit"],
+                        "label-sm": ["Inter"],
+                        "data-display": ["Outfit"],
+                        "headline-md": ["Outfit"],
+                        "body-lg": ["Inter"],
+                        "label-bold": ["Inter"],
+                        "body-md": ["Inter"]
+                    },
+                    "fontSize": {
+                        "headline-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "headline-lg-mobile": ["24px", {"lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "700"}],
+                        "label-sm": ["12px", {"lineHeight": "16px", "letterSpacing": "0.04em", "fontWeight": "500"}],
+                        "data-display": ["20px", {"lineHeight": "24px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                        "headline-md": ["24px", {"lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                        "body-lg": ["18px", {"lineHeight": "28px", "letterSpacing": "0", "fontWeight": "400"}],
+                        "label-bold": ["14px", {"lineHeight": "20px", "letterSpacing": "0.02em", "fontWeight": "600"}],
+                        "body-md": ["16px", {"lineHeight": "24px", "letterSpacing": "0", "fontWeight": "400"}]
+                    }
+                },
+            },
+        }
+    </script>
+</head>
+<body class="bg-background dark:bg-[#0B132B] text-on-surface dark:text-gray-100 font-body-md selection:bg-primary-container selection:text-on-primary-container">
+<div class="flex h-screen overflow-hidden">
+    <!-- SIDEBAR -->
+    <aside class="hidden lg:flex flex-col w-[30%] bg-surface-container-low dark:bg-[#1C2541]/90 border-r border-outline-variant dark:border-white/10 backdrop-blur-xl p-stack-md gap-stack-lg overflow-y-auto">
+        <!-- App Branding -->
+        <div class="flex flex-col gap-base">
+            <div class="flex items-center gap-2">
+                <span class="font-headline-md text-headline-md text-primary dark:text-primary-container font-bold">Mutual Fund FAQ</span>
+                <span class="pulse-badge bg-primary-container text-on-primary-container text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">Facts-Only</span>
+            </div>
+            <p class="text-on-surface-variant dark:text-gray-300 text-label-sm font-label-sm">Compliance Guard: Strictly Fact-Only Mode</p>
+        </div>
+
+
+
+        <!-- Regulatory Disclaimer -->
+        <div class="p-stack-md rounded-xl border border-secondary-container bg-secondary-container/10 border-l-4 border-l-secondary dark:border-l-primary-container">
+            <div class="flex items-center gap-2 mb-2 text-on-secondary-container dark:text-primary-container font-bold">
+                <span class="material-symbols-outlined text-[20px]">gavel</span>
+                <span class="font-label-bold text-label-bold">Regulatory Disclaimer</span>
+            </div>
+            <p class="text-on-surface-variant dark:text-gray-300 text-label-sm leading-relaxed">
+                This tool provides information based on publicly available offer documents. It is strictly <strong>NOT</strong> investment advice. Consult a SEBI-registered advisor for financial planning.
+            </p>
+        </div>
+
+        <!-- Schemes List (Accordion Style) -->
+        <div class="flex flex-col gap-stack-sm">
+            <h3 class="font-label-bold text-label-bold text-on-surface-variant dark:text-gray-300 flex items-center gap-2">
+                <span class="material-symbols-outlined text-[18px]">account_balance</span>
+                Available Schemes
+            </h3>
+            <details class="group bg-surface-container dark:bg-slate-800 rounded-lg transition-all duration-300 open:bg-surface-container-high dark:open:bg-slate-800/80" open="">
+                <summary class="flex justify-between items-center p-stack-md cursor-pointer list-none font-bold text-on-surface dark:text-gray-200">
+                    HDFC Mutual Fund
+                    <span class="material-symbols-outlined group-open:rotate-180 transition-transform">expand_more</span>
+                </summary>
+                <div class="flex flex-col gap-2 pb-stack-md px-stack-md text-[13px] text-on-surface-variant dark:text-gray-300">
+                    <div class="flex items-start gap-2 py-1 px-1 leading-snug">
+                        <span class="w-1.5 h-1.5 rounded-full bg-primary dark:bg-primary-container mt-1.5 shrink-0"></span>
+                        <span>HDFC Mid-Cap Opportunities Fund</span>
+                    </div>
+                    <div class="flex items-start gap-2 py-1 px-1 leading-snug">
+                        <span class="w-1.5 h-1.5 rounded-full bg-primary dark:bg-primary-container mt-1.5 shrink-0"></span>
+                        <span>HDFC Small Cap Fund</span>
+                    </div>
+                    <div class="flex items-start gap-2 py-1 px-1 leading-snug">
+                        <span class="w-1.5 h-1.5 rounded-full bg-primary dark:bg-primary-container mt-1.5 shrink-0"></span>
+                        <span>HDFC Gold ETF Fund of Fund</span>
+                    </div>
+                    <div class="flex items-start gap-2 py-1 px-1 leading-snug">
+                        <span class="w-1.5 h-1.5 rounded-full bg-primary dark:bg-primary-container mt-1.5 shrink-0"></span>
+                        <span>HDFC Multi Cap Fund</span>
+                    </div>
+                    <div class="flex items-start gap-2 py-1 px-1 leading-snug">
+                        <span class="w-1.5 h-1.5 rounded-full bg-primary dark:bg-primary-container mt-1.5 shrink-0"></span>
+                        <span>HDFC Large Cap Fund</span>
+                    </div>
+                </div>
+            </details>
+            <details class="group bg-surface-container dark:bg-slate-800 rounded-lg transition-all duration-300 open:bg-surface-container-high dark:open:bg-slate-800/80" open="">
+                <summary class="flex justify-between items-center p-stack-md cursor-pointer list-none font-bold text-on-surface dark:text-gray-200">
+                    SBI Mutual Fund
+                    <span class="material-symbols-outlined group-open:rotate-180 transition-transform">expand_more</span>
+                </summary>
+                <div class="flex flex-col gap-2 pb-stack-md px-stack-md text-[13px] text-on-surface-variant dark:text-gray-300">
+                    <div class="flex items-start gap-2 py-1 px-1 leading-snug">
+                        <span class="w-1.5 h-1.5 rounded-full bg-primary dark:bg-primary-container mt-1.5 shrink-0"></span>
+                        <span>SBI Magnum Multiplier Fund</span>
+                    </div>
+                    <div class="flex items-start gap-2 py-1 px-1 leading-snug">
+                        <span class="w-1.5 h-1.5 rounded-full bg-primary dark:bg-primary-container mt-1.5 shrink-0"></span>
+                        <span>SBI Small & Midcap Fund</span>
+                    </div>
+                    <div class="flex items-start gap-2 py-1 px-1 leading-snug">
+                        <span class="w-1.5 h-1.5 rounded-full bg-primary dark:bg-primary-container mt-1.5 shrink-0"></span>
+                        <span>SBI Pharma Fund</span>
+                    </div>
+                    <div class="flex items-start gap-2 py-1 px-1 leading-snug">
+                        <span class="w-1.5 h-1.5 rounded-full bg-primary dark:bg-primary-container mt-1.5 shrink-0"></span>
+                        <span>SBI Gold Fund</span>
+                    </div>
+                </div>
+            </details>
+        </div>
+
+        <!-- Privacy Guard -->
+        <div class="p-stack-md rounded-xl bg-error-container/20 border border-error/20 flex gap-3 items-start">
+            <span class="material-symbols-outlined text-error" style="font-variation-settings: 'FILL' 1;">security</span>
+            <div>
+                <span class="font-label-bold text-label-bold text-on-error-container dark:text-red-400 block mb-1">Privacy Shield</span>
+                <p class="text-on-surface-variant dark:text-gray-300 text-label-sm leading-relaxed">DO NOT share PII (PAN, Aadhaar, Folio numbers). Our system automatically redacts sensitive patterns.</p>
+            </div>
+        </div>
+
+        <!-- Resource Links -->
+        <div class="mt-auto pt-stack-lg border-t border-outline-variant/30 flex flex-col gap-2">
+            <span class="text-label-sm font-label-sm text-on-surface-variant dark:text-gray-400 uppercase tracking-widest">Resources</span>
+            <div class="flex flex-col gap-1">
+                <a class="flex items-center gap-2 text-on-surface-variant dark:text-gray-300 hover:text-primary dark:hover:text-primary-container transition-all group py-1" href="https://www.amfiindia.com/investor-corner" target="_blank">
+                    <span class="material-symbols-outlined text-[18px]">open_in_new</span>
+                    <span class="text-label-bold font-label-bold">AMFI Portal</span>
+                </a>
+                <a class="flex items-center gap-2 text-on-surface-variant dark:text-gray-300 hover:text-primary dark:hover:text-primary-container transition-all group py-1" href="https://www.sebi.gov.in" target="_blank">
+                    <span class="material-symbols-outlined text-[18px]">policy</span>
+                    <span class="text-label-bold font-label-bold">SEBI Circulars</span>
+                </a>
+                <a class="flex items-center gap-2 text-on-surface-variant dark:text-gray-300 hover:text-primary dark:hover:text-primary-container transition-all group py-1" href="https://www.hdfcfund.com" target="_blank">
+                    <span class="material-symbols-outlined text-[18px]">library_books</span>
+                    <span class="text-label-bold font-label-bold">HDFC AMC Guides</span>
+                </a>
+                <a class="flex items-center gap-2 text-on-surface-variant dark:text-gray-300 hover:text-primary dark:hover:text-primary-container transition-all group py-1" href="https://www.sbimf.com" target="_blank">
+                    <span class="material-symbols-outlined text-[18px]">library_books</span>
+                    <span class="text-label-bold font-label-bold">SBI AMC Guides</span>
+                </a>
+            </div>
+        </div>
+    </aside>
+
+    <!-- MAIN WORKSPACE -->
+    <main class="flex-1 flex flex-col h-full bg-surface dark:bg-[#0B132B]">
+        <!-- HEADER -->
+        <header class="sticky top-0 z-50 flex justify-between items-center px-container-padding-desktop w-full h-16 bg-surface/80 dark:bg-[#0B132B]/80 backdrop-blur-xl border-b border-outline-variant dark:border-white/10 shadow-sm">
+            <div class="flex flex-col">
+                <h1 class="font-headline-md text-headline-md font-bold text-primary dark:text-primary-container leading-tight">Mutual Fund Q&amp;A</h1>
+                <div class="flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full bg-error-container status-indicator-dot transition-all"></span>
+                    <span class="text-label-sm font-label-sm text-on-surface-variant dark:text-gray-300 status-indicator-text">Checking Backend...</span>
+                </div>
+            </div>
+            <div class="flex items-center gap-stack-md">
+                <button class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-surface-container-highest dark:hover:bg-slate-800 transition-colors" onclick="toggleTheme()">
+                    <span class="material-symbols-outlined text-on-surface dark:text-white" id="theme-icon">light_mode</span>
+                </button>
+                <div class="flex gap-2">
+                    <button class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-surface-container-highest dark:hover:bg-slate-800 transition-colors">
+                        <span class="material-symbols-outlined text-on-surface dark:text-white">notifications</span>
+                    </button>
+                    <div class="relative inline-block text-left">
+                        <button id="settings-toggle-btn" class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-surface-container-highest dark:hover:bg-slate-800 transition-colors">
+                            <span class="material-symbols-outlined text-on-surface dark:text-white">settings</span>
+                        </button>
+                        <!-- Connection Settings Popover -->
+                        <div id="settings-popover" class="hidden absolute right-0 mt-2 w-80 p-stack-md rounded-2xl border border-outline-variant dark:border-white/10 bg-surface-container-low dark:bg-slate-900 shadow-2xl flex flex-col gap-2 z-50">
+                            <div class="flex items-center gap-2 text-on-surface dark:text-gray-200 font-bold">
+                                <span class="material-symbols-outlined text-[20px]">settings_ethernet</span>
+                                <span class="font-label-bold text-label-bold">Connection Settings</span>
+                            </div>
+                            <div class="flex flex-col gap-1">
+                                <label for="api-url-input" class="text-[10px] text-on-surface-variant dark:text-gray-400 uppercase tracking-widest">Backend API URL</label>
+                                <input type="text" id="api-url-input" class="w-full text-xs bg-surface dark:bg-slate-800 border border-outline-variant dark:border-white/10 rounded-lg px-3 py-2 text-on-surface dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-container" placeholder="http://localhost:8080">
+                            </div>
+                            <p class="text-[10px] text-on-surface-variant dark:text-gray-400 leading-relaxed">Enter target API URL to connect static UI with RAG engine.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- CHAT AREA -->
+        <div class="flex-1 overflow-y-auto px-container-padding-desktop py-stack-lg flex flex-col gap-stack-lg scroll-smooth" id="chat-container">
+            <!-- Welcome State -->
+            <div class="max-w-3xl mx-auto w-full space-y-stack-lg mt-8" id="welcome-state">
+                <div class="p-8 rounded-3xl bg-surface-container-low dark:bg-slate-800/80 border border-outline-variant dark:border-white/10 shadow-sm relative overflow-hidden group">
+                    <div class="absolute -right-12 -top-12 w-48 h-48 bg-primary/5 rounded-full blur-3xl transition-transform group-hover:scale-150 duration-700"></div>
+                    <h2 class="font-headline-lg text-headline-lg mb-4 text-on-surface dark:text-white">Ask me anything about HDFC & SBI Mutual Fund schemes.</h2>
+                    <p class="text-body-lg font-body-lg text-on-surface-variant dark:text-gray-300 max-w-xl">
+                        Instant access to expense ratios, exit loads, and benchmark performance from official scheme information documents.
+                    </p>
+                </div>
+                <!-- Quick Start Prompts -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-stack-md">
+                    <button class="quick-prompt-btn p-stack-md rounded-2xl bg-surface-container-lowest dark:bg-slate-800 border border-outline-variant dark:border-white/10 text-left hover:border-primary-container dark:hover:border-primary-container hover:shadow-md transition-all group" data-prompt="What is the exit load for HDFC Mid-Cap Opportunities Fund?">
+                        <span class="material-symbols-outlined text-primary dark:text-primary-container mb-2">payments</span>
+                        <p class="font-label-bold text-label-bold text-on-surface dark:text-white group-hover:text-primary dark:group-hover:text-primary-container transition-colors">Exit Load</p>
+                        <p class="text-label-sm text-on-surface-variant dark:text-gray-400">HDFC Mid-Cap Opportunities details...</p>
+                    </button>
+                    <button class="quick-prompt-btn p-stack-md rounded-2xl bg-surface-container-lowest dark:bg-slate-800 border border-outline-variant dark:border-white/10 text-left hover:border-primary-container dark:hover:border-primary-container hover:shadow-md transition-all group" data-prompt="Tell me the expense ratio of HDFC Small Cap Fund.">
+                        <span class="material-symbols-outlined text-primary dark:text-primary-container mb-2">account_balance_wallet</span>
+                        <p class="font-label-bold text-label-bold text-on-surface dark:text-white group-hover:text-primary dark:group-hover:text-primary-container transition-colors">Expense Ratio</p>
+                        <p class="text-label-sm text-on-surface-variant dark:text-gray-400">HDFC Small Cap Fund ratios...</p>
+                    </button>
+                    <button class="quick-prompt-btn p-stack-md rounded-2xl bg-surface-container-lowest dark:bg-slate-800 border border-outline-variant dark:border-white/10 text-left hover:border-primary-container dark:hover:border-primary-container hover:shadow-md transition-all group" data-prompt="What is the benchmark for the HDFC Gold ETF Fund of Fund?">
+                        <span class="material-symbols-outlined text-primary dark:text-primary-container mb-2">query_stats</span>
+                        <p class="font-label-bold text-label-bold text-on-surface dark:text-white group-hover:text-primary dark:group-hover:text-primary-container transition-colors">Benchmark</p>
+                        <p class="text-label-sm text-on-surface-variant dark:text-gray-400">Gold ETF performance tracks...</p>
+                    </button>
+                </div>
+            </div>
+            <!-- Chat History (Dynamic) -->
+            <div class="max-w-4xl mx-auto w-full flex flex-col gap-6" id="chat-history">
+                <!-- Messages will be injected here -->
+            </div>
+        </div>
+        <!-- STICKY INPUT AREA -->
+        <div class="p-container-padding-desktop bg-surface dark:bg-[#0B132B]">
+            <div class="max-w-4xl mx-auto relative group">
+                <div class="absolute -inset-1 bg-gradient-to-r from-primary/20 to-secondary/20 rounded-2xl blur opacity-25 group-focus-within:opacity-100 transition duration-1000 group-focus-within:duration-200"></div>
+                <form id="chat-query-form" class="relative flex items-center bg-surface-container-lowest dark:bg-slate-800 border border-outline-variant dark:border-white/10 rounded-2xl px-4 py-2 shadow-lg focus-within:ring-2 focus-within:ring-primary-container transition-all" onsubmit="return false;">
+                    <span class="material-symbols-outlined text-on-surface-variant mr-3">chat_bubble</span>
+                    <input class="flex-1 bg-transparent border-none focus:ring-0 text-body-md text-on-surface dark:text-white placeholder:text-on-surface-variant/50 dark:placeholder:text-white/30 h-12" id="user-input" placeholder="Ask about exit load, expense ratios or scheme facts..." type="text" required autocomplete="off"/>
+                    <button type="submit" class="w-12 h-12 bg-primary-container text-on-primary-container rounded-xl flex items-center justify-center hover:scale-105 active:scale-95 transition-all shadow-md group" id="send-btn">
+                        <span class="material-symbols-outlined group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform">send</span>
+                    </button>
+                </form>
+            </div>
+            <div class="max-w-4xl mx-auto mt-stack-sm flex justify-center">
+                <p class="text-[10px] text-on-surface-variant/60 dark:text-gray-400 font-label-sm tracking-wide uppercase">AI-Powered Compliance Filter Enabled</p>
+            </div>
+        </div>
+        <!-- FOOTER -->
+        <footer class="flex justify-between items-center px-container-padding-desktop py-4 w-full border-t border-outline-variant dark:border-white/10 bg-surface-container-lowest dark:bg-[#0B132B]">
+            <span class="text-label-sm font-label-sm text-on-surface-variant dark:text-gray-400">© 2026 Mutual Fund FAQ Assistant. Strictly for informational purposes.</span>
+            <div class="flex gap-stack-md">
+                <a class="text-label-sm font-label-sm text-on-surface-variant dark:text-gray-400 hover:text-primary transition-colors" href="#">Terms of Service</a>
+                <a class="text-label-sm font-label-sm text-on-surface-variant dark:text-gray-400 hover:text-primary transition-colors" href="#">Privacy Policy</a>
+                <a class="text-label-sm font-label-sm text-on-surface-variant dark:text-gray-400 hover:text-primary transition-colors" href="#">Disclaimer</a>
+            </div>
+        </footer>
+    </main>
+</div>
+<script src="app.js"></script>
+</body>
+</html>
