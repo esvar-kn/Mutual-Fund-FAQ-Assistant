@@ -2,8 +2,8 @@ name: Daily Mutual Fund Data Ingestion
 
 on:
   schedule:
-    # Runs at 9:20 AM IST (3:50 AM UTC) daily Monday through Friday
-    - cron: '50 3 * * 1-5'
+    # Runs at 9:00 AM IST (3:30 AM UTC) daily Monday through Friday
+    - cron: '30 3 * * 1-5'
   workflow_dispatch:
     # Allows manual execution from the GitHub Actions tab
 
