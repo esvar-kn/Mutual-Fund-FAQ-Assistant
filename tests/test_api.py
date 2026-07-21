@@ -79,6 +79,17 @@ def test_health(client):
     assert client.get("/health").json() == {"status": "healthy"}
 
 
+def test_schemes_endpoint(client):
+    res = client.get("/api/schemes")
+    assert res.status_code == 200
+    data = res.json()
+    assert "schemes" in data
+    assert isinstance(data["schemes"], list)
+    assert len(data["schemes"]) > 0
+    assert "amc" in data["schemes"][0]
+    assert "funds" in data["schemes"][0]
+
+
 def test_factual_query_returns_answer_and_citation(client):
     body = ask(client, "What is the exit load for HDFC Small Cap Fund?").json()
     assert body["status"] == "success"

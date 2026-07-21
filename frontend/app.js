@@ -16,9 +16,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     /* ------------------------------------------------------------ Config */
 
-    // Mirrors config/schemes.json. Ideally the backend would expose these via a
-    // /api/schemes endpoint so there is a single source of truth; until then,
-    // update this list when you add a scheme to config/schemes.json.
+    // Fallback scheme list if backend API is unreachable.
+    // The UI dynamically fetches /api/schemes on load to stay in sync with config/schemes.json.
     const SCHEMES = [
         {
             amc: 'HDFC Mutual Fund',
@@ -144,22 +143,28 @@ document.addEventListener('DOMContentLoaded', () => {
 
     /* -------------------------------------------------- Sidebar schemes */
 
-    SCHEMES.forEach((group, index) => {
-        const details = el('details', 'amc');
-        if (index === 0) details.open = true;
+    function renderSchemes(schemesList) {
+        if (!schemesList || !schemesList.length) return;
+        schemeGroups.replaceChildren();
+        schemesList.forEach((group, index) => {
+            const details = el('details', 'amc');
+            if (index === 0) details.open = true;
 
-        const summary = el('summary');
-        summary.appendChild(el('span', null, group.amc));
-        summary.appendChild(el('span', 'amc-count', String(group.funds.length)));
-        summary.appendChild(icon('expand_more'));
-        details.appendChild(summary);
+            const summary = el('summary');
+            summary.appendChild(el('span', null, group.amc));
+            summary.appendChild(el('span', 'amc-count', String(group.funds.length)));
+            summary.appendChild(icon('expand_more'));
+            details.appendChild(summary);
 
-        const list = el('ul', 'scheme-list');
-        group.funds.forEach(name => list.appendChild(el('li', 'scheme', name)));
-        details.appendChild(list);
+            const list = el('ul', 'scheme-list');
+            group.funds.forEach(name => list.appendChild(el('li', 'scheme', name)));
+            details.appendChild(list);
 
-        schemeGroups.appendChild(details);
-    });
+            schemeGroups.appendChild(details);
+        });
+    }
+
+    renderSchemes(SCHEMES);
 
     /* --------------------------------------------------- Quick prompts */
 
@@ -191,6 +196,21 @@ document.addEventListener('DOMContentLoaded', () => {
         statusText.textContent = text;
     }
 
+    async function fetchSchemes() {
+        if (!backendUrl) return;
+        try {
+            const res = await fetch(`${backendUrl}/api/schemes`, { method: 'GET', mode: 'cors' });
+            if (res.ok) {
+                const data = await res.json();
+                if (data && data.schemes && data.schemes.length) {
+                    renderSchemes(data.schemes);
+                }
+            }
+        } catch (e) {
+            // Keep fallback rendering on network error
+        }
+    }
+
     async function verifyBackendStatus() {
         if (!backendUrl) {
             setStatus('offline', 'Not configured');
@@ -199,7 +219,12 @@ document.addEventListener('DOMContentLoaded', () => {
         setStatus('pending', 'Connecting…');
         try {
             const res = await fetch(`${backendUrl}/health`, { method: 'GET', mode: 'cors' });
-            setStatus(res.ok ? 'online' : 'offline', res.ok ? 'Online' : 'Backend error');
+            if (res.ok) {
+                setStatus('online', 'Online');
+                fetchSchemes();
+            } else {
+                setStatus('offline', 'Backend error');
+            }
         } catch (e) {
             setStatus('offline', 'Unreachable');
         }

@@ -1,4 +1,4 @@
-name: Daily Mutual Fund Data Ingestion
+name: Weekday Mutual Fund Data Ingestion
 
 on:
   schedule:

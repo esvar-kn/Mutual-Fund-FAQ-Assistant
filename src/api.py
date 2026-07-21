@@ -16,6 +16,7 @@ from src.config import (
     RATE_LIMIT_REQUESTS,
     RATE_LIMIT_WINDOW_SECONDS,
     MAX_QUERY_LENGTH,
+    get_grouped_schemes,
 )
 from src.chatbot.retriever import MutualFundRetriever
 from src.chatbot.engine import GroqChatEngine
@@ -131,6 +132,11 @@ def get_engine():
 def health_check():
     """Verify backend is alive."""
     return {"status": "healthy"}
+
+@app.get("/api/schemes")
+def list_schemes():
+    """Returns indexed schemes grouped by AMC dynamically loaded from configuration."""
+    return {"schemes": get_grouped_schemes()}
 
 @app.post("/api/query", response_model=QueryResponse)
 def query_endpoint(req: QueryRequest, request: Request):

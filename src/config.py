@@ -189,3 +189,15 @@ REFUSAL_MESSAGES = {
 }
 
 # URLs are loaded dynamically from config/schemes.json
+
+def get_grouped_schemes():
+    """Returns schemes grouped by AMC for frontend presentation."""
+    amc_map = {}
+    for item in SCHEMES_LIST:
+        amc = item.get("amc_name", AMC_NAME)
+        if amc not in amc_map:
+            amc_map[amc] = []
+        if item.get("name") and item["name"] not in amc_map[amc]:
+            amc_map[amc].append(item["name"])
+    return [{"amc": amc, "funds": funds} for amc, funds in amc_map.items()]
+
