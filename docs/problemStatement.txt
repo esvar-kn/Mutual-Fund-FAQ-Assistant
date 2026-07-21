@@ -1,4 +1,4 @@
-Problem Statement: Mutual Fund FAQ Assistant (Facts-Only Q&A)
+Problem Statement: FundFacts (Facts-Only Q&A)
 Overview
 The objective of this project is to build a facts-only FAQ assistant for mutual fund schemes, using Groww as the reference product context. The assistant will answer objective, verifiable queries related to mutual funds by retrieving information exclusively from official public sources, such as AMC (Asset Management Company) websites, AMFI, and SEBI.
 The system must strictly avoid providing investment advice, opinions, or recommendations. Every response must include a single, clear source link and adhere to defined constraints around clarity, accuracy, and compliance.

@@ -1,6 +1,6 @@
-# RAG Chatbot Architecture: Mutual Fund FAQ Assistant (Dynamic & Multi-AMC)
+# RAG Chatbot Architecture: FundFacts (Dynamic & Multi-AMC)
 
-This document details the system architecture, component design, data flow, and guardrails for the **Mutual Fund FAQ Assistant**. The architecture is optimized for scalability across multiple Asset Management Companies (AMCs), factual accuracy, strict compliance (no investment advice, no PII), and source verification.
+This document details the system architecture, component design, data flow, and guardrails for **FundFacts**. The architecture is optimized for scalability across multiple Asset Management Companies (AMCs), factual accuracy, strict compliance (no investment advice, no PII), and source verification.
 
 ---
 
@@ -133,7 +133,7 @@ The prompt enforces strict behavior constraints on the LLM:
 
 ```text
 System Prompt:
-You are a facts-only Mutual Fund FAQ Assistant. Your objective is to answer user queries using ONLY the provided contexts.
+You are FundFacts, a facts-only mutual fund information assistant. Your objective is to answer user queries using ONLY the provided contexts.
 
 Constraints:
 1. Limit your answer to a maximum of 3 sentences.
@@ -188,7 +188,7 @@ For queries that require refusal (advisory, lack of information, or PII block), 
 ## 7. Minimal User Interface Layout
 
 The Web UI will display:
-1. **Header**: "Mutual Fund Facts-Only FAQ Assistant"
+1. **Header**: "FundFacts"
 2. **Disclaimer Notice** (Sidebar/Banner): *“This tool is facts-only and retrieves information from official AMC/SEBI/AMFI documents. It does not provide investment advice or comparisons.”*
 3. **Sample Queries**: Clickable buttons for:
    - *"What is the exit load for HDFC Mid-Cap Fund?"*

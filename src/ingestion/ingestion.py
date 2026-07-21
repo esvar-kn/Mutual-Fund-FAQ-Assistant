@@ -1,41 +1,19 @@
 import os
 import re
-from pathlib import Path
 
-try:
-    from src.config import (
-        RAW_DIR,
-        PROCESSED_DIR,
-        DB_DIR,
-        HEADERS,
-        EMBEDDING_MODEL_NAME,
-        CHROMA_COLLECTION_NAME,
-        SCHEMES_LIST
-    )
-    from src.ingestion.fetcher import DocumentFetcher
-    from src.ingestion.parser import DocumentParser
-    from src.ingestion.chunker import DocumentChunker
-    from src.ingestion.indexer import DocumentIndexer, BGEEmbeddingFunction
-except ModuleNotFoundError:
-    import sys
-    current_dir = Path(__file__).resolve().parent
-    # Append both src and src/ingestion to python path
-    sys.path.append(str(current_dir.parent))
-    sys.path.append(str(current_dir))
-    
-    from config import (
-        RAW_DIR,
-        PROCESSED_DIR,
-        DB_DIR,
-        HEADERS,
-        EMBEDDING_MODEL_NAME,
-        CHROMA_COLLECTION_NAME,
-        SCHEMES_LIST
-    )
-    from fetcher import DocumentFetcher
-    from parser import DocumentParser
-    from chunker import DocumentChunker
-    from indexer import DocumentIndexer, BGEEmbeddingFunction
+from src.config import (
+    RAW_DIR,
+    PROCESSED_DIR,
+    DB_DIR,
+    HEADERS,
+    EMBEDDING_MODEL_NAME,
+    CHROMA_COLLECTION_NAME,
+    SCHEMES_LIST
+)
+from src.ingestion.fetcher import DocumentFetcher
+from src.ingestion.parser import DocumentParser
+from src.ingestion.chunker import DocumentChunker
+from src.ingestion.indexer import DocumentIndexer, BGEEmbeddingFunction
 
 def slugify(text):
     """Helper to convert string into safe folder/file names."""

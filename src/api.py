@@ -1,54 +1,131 @@
 import re
-import os
-from fastapi import FastAPI, HTTPException
-from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
-from typing import Optional, List
+import time
+import threading
+from collections import defaultdict, deque
 
-# Try-except absolute/local import for configuration resilience
-try:
-    from src.chatbot.retriever import MutualFundRetriever
-    from src.chatbot.engine import GroqChatEngine
-    from src.guardrails.pre_retrieval import PreRetrievalGuard
-    from src.guardrails.post_retrieval import PostRetrievalGuard
-    from src.guardrails.refusals import RefusalFormatter
-except ModuleNotFoundError:
-    import sys
-    from pathlib import Path
-    current_dir = Path(__file__).resolve().parent
-    sys.path.append(str(current_dir.parent))
-    sys.path.append(str(current_dir))
-    
-    from chatbot.retriever import MutualFundRetriever
-    from chatbot.engine import GroqChatEngine
-    from guardrails.pre_retrieval import PreRetrievalGuard
-    from guardrails.post_retrieval import PostRetrievalGuard
-    from guardrails.refusals import RefusalFormatter
+from fastapi import FastAPI, Request
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from pydantic import BaseModel, Field
+from typing import Optional
+
+from src.config import (
+    RETRIEVAL_DISTANCE_THRESHOLD,
+    RETRIEVAL_TOP_K,
+    ALLOWED_ORIGINS,
+    RATE_LIMIT_REQUESTS,
+    RATE_LIMIT_WINDOW_SECONDS,
+    MAX_QUERY_LENGTH,
+)
+from src.chatbot.retriever import MutualFundRetriever
+from src.chatbot.engine import GroqChatEngine
+from src.guardrails.pre_retrieval import PreRetrievalGuard
+from src.guardrails.post_retrieval import PostRetrievalGuard
+from src.guardrails.refusals import RefusalFormatter
 
 app = FastAPI(
-    title="Mutual Fund FAQ Assistant Backend",
+    title="FundFacts Backend",
     description="FastAPI service exposing RAG retrieval and compliance guardrails.",
     version="1.0.0"
 )
 
-# Enable CORS for frontend hosting (Vercel)
+# Enable CORS for frontend hosting (Vercel).
+# Origins come from ALLOWED_ORIGINS; credentials stay off because the API is
+# stateless (no cookies or auth headers), and "*" + credentials is a combination
+# browsers reject outright.
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Allows all origins for clean cross-origin deploy requests
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_origins=ALLOWED_ORIGINS,
+    allow_credentials=False,
+    allow_methods=["GET", "POST"],
+    allow_headers=["Content-Type"],
 )
 
+
+class RateLimiter:
+    """
+    Fixed-memory sliding-window rate limiter keyed by client IP.
+
+    Deliberately in-process and dependency-free. That means limits are per
+    worker process and reset on restart, so this curbs casual abuse of the paid
+    Groq endpoint but is not a substitute for a shared limiter (Redis) or an
+    edge/WAF rule once the service runs more than one instance.
+    """
+
+    def __init__(self, max_requests, window_seconds):
+        self.max_requests = max_requests
+        self.window_seconds = window_seconds
+        self._hits = defaultdict(deque)
+        self._lock = threading.Lock()
+
+    def allow(self, client_id):
+        """Records a hit; returns (allowed, retry_after_seconds)."""
+        now = time.monotonic()
+        cutoff = now - self.window_seconds
+        with self._lock:
+            hits = self._hits[client_id]
+            while hits and hits[0] <= cutoff:
+                hits.popleft()
+
+            if len(hits) >= self.max_requests:
+                return False, max(1, int(hits[0] + self.window_seconds - now) + 1)
+
+            hits.append(now)
+
+            # Opportunistically drop idle clients so the dict cannot grow without bound.
+            if len(self._hits) > 10_000:
+                for key in [k for k, v in self._hits.items() if not v]:
+                    del self._hits[key]
+
+            return True, 0
+
+
+rate_limiter = RateLimiter(RATE_LIMIT_REQUESTS, RATE_LIMIT_WINDOW_SECONDS)
+
+
 class QueryRequest(BaseModel):
-    query: str
-    scheme_filter: Optional[str] = None
-    amc_filter: Optional[str] = None
+    query: str = Field(min_length=1, max_length=MAX_QUERY_LENGTH)
+    scheme_filter: Optional[str] = Field(default=None, max_length=200)
+    amc_filter: Optional[str] = Field(default=None, max_length=200)
 
 class QueryResponse(BaseModel):
     answer: str
     source: str
     status: str
+
+# Cached RAG components.
+#
+# Constructing MutualFundRetriever loads the BGE SentenceTransformer and opens
+# ChromaDB, which took ~5s. Doing that per request dominated response time, so
+# both components are built once and reused.
+#
+# The cache is keyed on the current class object rather than a plain "is None"
+# check, so that swapping the class (as the tests do) transparently rebuilds
+# instead of handing back a stale instance.
+_retriever = None
+_engine = None
+_components_lock = threading.Lock()
+
+
+def get_retriever():
+    """Returns the process-wide retriever, building it on first use."""
+    global _retriever
+    if type(_retriever) is not MutualFundRetriever:
+        with _components_lock:
+            if type(_retriever) is not MutualFundRetriever:
+                _retriever = MutualFundRetriever()
+    return _retriever
+
+
+def get_engine():
+    """Returns the process-wide Groq engine, building it on first use."""
+    global _engine
+    if type(_engine) is not GroqChatEngine:
+        with _components_lock:
+            if type(_engine) is not GroqChatEngine:
+                _engine = GroqChatEngine()
+    return _engine
+
 
 @app.get("/health")
 def health_check():
@@ -56,11 +133,28 @@ def health_check():
     return {"status": "healthy"}
 
 @app.post("/api/query", response_model=QueryResponse)
-def query_endpoint(req: QueryRequest):
+def query_endpoint(req: QueryRequest, request: Request):
     """
     Main RAG query endpoint that processes user prompts, runs pre-retrieval guards,
     performs ChromaDB context retrieval, generates LLM answers via Groq, and runs post-generation compliance checks.
     """
+    # 0. Rate limit before doing any paid or expensive work
+    client_id = request.client.host if request.client else "unknown"
+    allowed, retry_after = rate_limiter.allow(client_id)
+    if not allowed:
+        return JSONResponse(
+            status_code=429,
+            headers={"Retry-After": str(retry_after)},
+            content=QueryResponse(
+                answer=(
+                    "You have sent too many requests in a short period. "
+                    f"Please wait about {retry_after} seconds and try again."
+                ),
+                source="N/A",
+                status="rate_limited",
+            ).model_dump(),
+        )
+
     query = req.query
     scheme_filter = req.scheme_filter
     amc_filter = req.amc_filter
@@ -84,12 +178,12 @@ def query_endpoint(req: QueryRequest):
         
     # 2. RAG Retrieval
     try:
-        retriever = MutualFundRetriever()
+        retriever = get_retriever()
         contexts = retriever.retrieve_context(
             query=query, 
             scheme_filter=scheme_filter, 
-            amc_filter=amc_filter, 
-            top_k=4
+            amc_filter=amc_filter,
+            top_k=RETRIEVAL_TOP_K
         )
     except Exception as e:
         print(f"Error during context retrieval: {e}")
@@ -99,8 +193,8 @@ def query_endpoint(req: QueryRequest):
             status="retrieval_error"
         )
         
-    # Low-relevance filter: distance check (threshold 1.1)
-    if not contexts or contexts[0].get("distance", 9.9) > 1.1:
+    # Low-relevance filter: see RETRIEVAL_DISTANCE_THRESHOLD in src/config.py
+    if not contexts or contexts[0].get("distance", 9.9) > RETRIEVAL_DISTANCE_THRESHOLD:
         return QueryResponse(
             answer=RefusalFormatter.get_out_of_context_refusal(),
             source="https://www.sebi.gov.in/",
@@ -109,7 +203,7 @@ def query_endpoint(req: QueryRequest):
         
     # 3. Groq LLM Response Generation
     try:
-        engine = GroqChatEngine()
+        engine = get_engine()
         raw_response = engine.generate_answer(query, contexts)
     except Exception as e:
         print(f"Error calling Groq API: {e}")

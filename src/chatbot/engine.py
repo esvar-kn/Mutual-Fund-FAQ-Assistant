@@ -1,20 +1,7 @@
 import os
 from groq import Groq
-from pathlib import Path
 
-# Try-except absolute/local import for configuration resilience
-try:
-    from src.config import GROQ_MODEL
-except ModuleNotFoundError:
-    import sys
-    current_dir = Path(__file__).resolve().parent
-    sys.path.append(str(current_dir.parent.parent))
-    sys.path.append(str(current_dir.parent))
-    
-    try:
-        from src.config import GROQ_MODEL
-    except ModuleNotFoundError:
-        GROQ_MODEL = "llama-3.1-8b-instant"
+from src.config import GROQ_MODEL, GROQ_TIMEOUT_SECONDS, GROQ_MAX_RETRIES
 
 class GroqChatEngine:
     """Handles system prompt construction and Groq LLM completion requests."""
@@ -23,7 +10,13 @@ class GroqChatEngine:
         self.api_key = api_key or os.getenv("GROQ_API_KEY")
         if not self.api_key:
             print("Warning: GROQ_API_KEY is not set. LLM generation calls will fail.")
-        self.client = Groq(api_key=self.api_key)
+        # Bound the call so a slow upstream surfaces as the API's llm_error
+        # fallback instead of leaving the user watching a spinner.
+        self.client = Groq(
+            api_key=self.api_key,
+            timeout=GROQ_TIMEOUT_SECONDS,
+            max_retries=GROQ_MAX_RETRIES,
+        )
 
     def generate_answer(self, query, contexts):
         """Constructs prompt context and queries Groq LLM model."""
@@ -34,7 +27,7 @@ class GroqChatEngine:
 
         # 2. System Instructions
         system_instruction = (
-            "You are a facts-only Mutual Fund FAQ Assistant.\n"
+            "You are FundFacts, a facts-only mutual fund information assistant.\n"
             "You answer queries about mutual fund schemes using ONLY the provided Context Blocks.\n\n"
             "RULES:\n"
             "1. Your response must be extremely concise and MUST NOT exceed 3 sentences in total.\n"
@@ -69,7 +62,7 @@ class GroqChatEngine:
             context_str += f"Context Block {i+1} (Source: {ctx['source_url']}):\n{ctx['text']}\n\n"
 
         system_instruction = (
-            "You are a facts-only Mutual Fund FAQ Assistant.\n"
+            "You are FundFacts, a facts-only mutual fund information assistant.\n"
             "Your previous response violated the strict sentence count limit (more than 3 sentences). "
             "Please rewrite the previous response to be extremely concise and exactly 1 to 3 sentences in total.\n"
             "Cite exactly ONE relevant source URL from the provided Context Blocks at the end.\n"

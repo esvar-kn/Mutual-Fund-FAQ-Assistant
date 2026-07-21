@@ -5,10 +5,7 @@ from pathlib import Path
 from datetime import datetime
 from transformers import AutoTokenizer
 
-try:
-    from src.config import OFFICIAL_SCHEME_LINKS, OFFICIAL_GUIDANCE_LINKS
-except ModuleNotFoundError:
-    from config import OFFICIAL_SCHEME_LINKS, OFFICIAL_GUIDANCE_LINKS
+from src.config import OFFICIAL_SCHEME_LINKS, OFFICIAL_GUIDANCE_LINKS
 
 class DocumentChunker:
     """Reads processed JSON files and segments their content into logical chunks for vector database indexing."""

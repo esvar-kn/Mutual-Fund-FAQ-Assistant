@@ -18,10 +18,13 @@ class PostRetrievalGuard:
         # Remove URLs to avoid dot separation issues
         text_without_urls = re.sub(r'https?://\S+', '', text_without_source)
         
-        # Clean common abbreviations with dots
-        text_abbr = re.sub(r'\bp\.a\.\b', 'pa', text_without_urls, flags=re.IGNORECASE)
-        text_abbr = re.sub(r'\be\.g\.\b', 'eg', text_abbr, flags=re.IGNORECASE)
-        text_abbr = re.sub(r'\bi\.e\.\b', 'ie', text_abbr, flags=re.IGNORECASE)
+        # Clean common abbreviations with dots.
+        # No trailing \b here: these abbreviations are normally followed by a space,
+        # and \b after a literal '.' only matches when a word character follows,
+        # which would leave the trailing dot to be miscounted as a sentence end.
+        text_abbr = re.sub(r'\bp\.\s*a\.', 'pa', text_without_urls, flags=re.IGNORECASE)
+        text_abbr = re.sub(r'\be\.\s*g\.', 'eg', text_abbr, flags=re.IGNORECASE)
+        text_abbr = re.sub(r'\bi\.\s*e\.', 'ie', text_abbr, flags=re.IGNORECASE)
         
         # Common word abbreviations
         text_abbr = re.sub(r'\b(sip|amc|cr|ltd|co|inc|mr|mrs|dr|vs)\.', r'\1', text_abbr, flags=re.IGNORECASE)

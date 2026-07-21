@@ -1,290 +1,383 @@
-document.addEventListener("DOMContentLoaded", () => {
-    // Select DOM elements
-    const queryForm = document.getElementById("chat-query-form");
-    const userInput = document.getElementById("user-input");
-    const chatContainer = document.getElementById("chat-container");
-    const chatHistory = document.getElementById("chat-history");
-    const welcomeState = document.getElementById("welcome-state");
-    const apiInput = document.getElementById("api-url-input");
-    const statusDot = document.querySelector(".status-indicator-dot");
-    const statusText = document.querySelector(".status-indicator-text");
-    const sendBtn = document.getElementById("send-btn");
-    const themeIcon = document.getElementById("theme-icon");
+/* ==========================================================================
+   FundFacts — UI controller
+   --------------------------------------------------------------------------
+   Two rules hold throughout this file:
 
-    // Initialize Theme preferred state
-    const currentTheme = localStorage.getItem("theme") || "light";
-    if (currentTheme === "dark") {
-        document.documentElement.classList.add("dark");
-        document.documentElement.classList.remove("light");
-        if (themeIcon) themeIcon.textContent = "dark_mode";
-    } else {
-        document.documentElement.classList.add("light");
-        document.documentElement.classList.remove("dark");
-        if (themeIcon) themeIcon.textContent = "light_mode";
+   1. Message content is NEVER assigned via innerHTML. Answer text derives from
+      third-party scraped HTML, so interpolating it into markup would turn a
+      poisoned source page into stored XSS. Everything goes through textContent.
+
+   2. Each in-flight question owns its own placeholder element, and the reply
+      REPLACES that placeholder. Appending replies to the end of the list made
+      answers attach to the wrong question whenever two requests overlapped.
+   ========================================================================== */
+
+document.addEventListener('DOMContentLoaded', () => {
+
+    /* ------------------------------------------------------------ Config */
+
+    // Mirrors config/schemes.json. Ideally the backend would expose these via a
+    // /api/schemes endpoint so there is a single source of truth; until then,
+    // update this list when you add a scheme to config/schemes.json.
+    const SCHEMES = [
+        {
+            amc: 'HDFC Mutual Fund',
+            funds: [
+                'HDFC Mid-Cap Opportunities Fund',
+                'HDFC Small Cap Fund',
+                'HDFC Gold ETF Fund of Fund',
+                'HDFC Multi Cap Fund',
+                'HDFC Large Cap Fund'
+            ]
+        },
+        {
+            amc: 'SBI Mutual Fund',
+            funds: [
+                'SBI Magnum Multiplier Fund',
+                'SBI Small & Midcap Fund',
+                'SBI Pharma Fund',
+                'SBI Gold Fund'
+            ]
+        }
+    ];
+
+    const QUICK_PROMPTS = [
+        { icon: 'payments',    title: 'Exit load',     hint: 'HDFC Mid-Cap Opportunities',
+          prompt: 'What is the exit load for HDFC Mid-Cap Opportunities Fund?' },
+        { icon: 'percent',     title: 'Expense ratio', hint: 'HDFC Small Cap Fund',
+          prompt: 'Tell me the expense ratio of HDFC Small Cap Fund.' },
+        { icon: 'query_stats', title: 'Benchmark',     hint: 'HDFC Gold ETF FoF',
+          prompt: 'What is the benchmark for the HDFC Gold ETF Fund of Fund?' }
+    ];
+
+    // Maps every status the API can return to its colour role, icon and label.
+    // Adding a backend status means adding one row here — nothing else.
+    const STATES = {
+        success:           { kind: 'verified', icon: 'verified',       label: 'Verified answer' },
+        blocked_advisory:  { kind: 'advisory', icon: 'balance',        label: 'Advice not permitted' },
+        blocked_pii:       { kind: 'security', icon: 'shield_lock',    label: 'Personal data blocked' },
+        no_context:        { kind: 'scope',    icon: 'travel_explore', label: 'Outside indexed documents' },
+        failed_validation: { kind: 'scope',    icon: 'rule',           label: 'Could not verify source' },
+        rate_limited:      { kind: 'system',   icon: 'hourglass_top',  label: 'Too many requests' },
+        retrieval_error:   { kind: 'system',   icon: 'cloud_off',      label: 'Service unavailable' },
+        llm_error:         { kind: 'system',   icon: 'cloud_off',      label: 'Service unavailable' },
+        client_error:      { kind: 'system',   icon: 'wifi_off',       label: 'Connection problem' }
+    };
+    const FALLBACK_STATE = STATES.client_error;
+
+    /* --------------------------------------------------------- Elements */
+
+    const app          = document.getElementById('app');
+    const sidebar      = document.getElementById('sidebar');
+    const scrim        = document.getElementById('scrim');
+    const sidebarBtn   = document.getElementById('sidebar-toggle');
+    const form         = document.getElementById('chat-query-form');
+    const input        = document.getElementById('user-input');
+    const sendBtn      = document.getElementById('send-btn');
+    const chatScroll   = document.getElementById('chat-container');
+    const chatHistory  = document.getElementById('chat-history');
+    const welcome      = document.getElementById('welcome-state');
+    const apiInput     = document.getElementById('api-url-input');
+    const statusEl     = document.getElementById('status');
+    const statusText   = document.getElementById('status-text');
+    const themeToggle  = document.getElementById('theme-toggle');
+    const themeIcon    = document.getElementById('theme-icon');
+    const settingsBtn  = document.getElementById('settings-toggle-btn');
+    const settingsPop  = document.getElementById('settings-popover');
+    const promptGrid   = document.getElementById('prompt-grid');
+    const schemeGroups = document.getElementById('scheme-groups');
+
+    /* ---------------------------------------------------- DOM utilities */
+
+    function el(tag, className, text) {
+        const node = document.createElement(tag);
+        if (className) node.className = className;
+        if (text !== undefined && text !== null) node.textContent = text;
+        return node;
     }
 
-    // Theme toggler function exposed globally for HTML onclick
-    window.toggleTheme = function() {
-        const html = document.documentElement;
-        if (html.classList.contains("dark")) {
-            html.classList.remove("dark");
-            html.classList.add("light");
-            themeIcon.textContent = "light_mode";
-            localStorage.setItem("theme", "light");
-        } else {
-            html.classList.remove("light");
-            html.classList.add("dark");
-            themeIcon.textContent = "dark_mode";
-            localStorage.setItem("theme", "dark");
-        }
-    };
+    function icon(name, className, filled) {
+        const node = el('span', 'material-symbols-outlined' + (className ? ' ' + className : ''), name);
+        if (filled) node.classList.add('icon-filled');
+        return node;
+    }
 
-    // Connection configuration settings
-    let backendUrl = localStorage.getItem("mf_rag_backend_url");
-    if (!backendUrl) {
-        backendUrl = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
-            ? "http://localhost:8080"
-            : "";
+    // Only http(s) links become anchors, so a "javascript:" or "data:" URL
+    // smuggled into the source field cannot become a clickable payload.
+    function safeHttpUrl(value) {
+        if (!value || value === 'N/A') return null;
+        try {
+            const parsed = new URL(value, window.location.href);
+            return (parsed.protocol === 'http:' || parsed.protocol === 'https:') ? parsed.href : null;
+        } catch (e) {
+            return null;
+        }
+    }
+
+    /* ------------------------------------------------------ Theme toggle */
+
+    function applyTheme(theme) {
+        document.documentElement.className = theme;
+        localStorage.setItem('theme', theme);
+        // Icon shows the action, not the current state.
+        themeIcon.textContent = theme === 'dark' ? 'light_mode' : 'dark_mode';
+        themeToggle.setAttribute('aria-label',
+            theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme');
+    }
+    applyTheme(document.documentElement.className === 'dark' ? 'dark' : 'light');
+
+    themeToggle.addEventListener('click', () => {
+        applyTheme(document.documentElement.className === 'dark' ? 'light' : 'dark');
+    });
+
+    /* ----------------------------------------------------- Mobile drawer */
+
+    function setNav(open) {
+        app.classList.toggle('nav-open', open);
+        sidebarBtn.setAttribute('aria-expanded', String(open));
+    }
+    sidebarBtn.addEventListener('click', () => setNav(!app.classList.contains('nav-open')));
+    scrim.addEventListener('click', () => setNav(false));
+    sidebar.addEventListener('click', (e) => {
+        if (e.target.closest('a')) setNav(false);
+    });
+
+    /* -------------------------------------------------- Sidebar schemes */
+
+    SCHEMES.forEach((group, index) => {
+        const details = el('details', 'amc');
+        if (index === 0) details.open = true;
+
+        const summary = el('summary');
+        summary.appendChild(el('span', null, group.amc));
+        summary.appendChild(el('span', 'amc-count', String(group.funds.length)));
+        summary.appendChild(icon('expand_more'));
+        details.appendChild(summary);
+
+        const list = el('ul', 'scheme-list');
+        group.funds.forEach(name => list.appendChild(el('li', 'scheme', name)));
+        details.appendChild(list);
+
+        schemeGroups.appendChild(details);
+    });
+
+    /* --------------------------------------------------- Quick prompts */
+
+    const promptButtons = QUICK_PROMPTS.map(item => {
+        const btn = el('button', 'prompt-card');
+        btn.type = 'button';
+        btn.appendChild(icon(item.icon));
+        btn.appendChild(el('span', 'prompt-title', item.title));
+        btn.appendChild(el('span', 'prompt-hint', item.hint));
+        btn.addEventListener('click', () => {
+            input.value = item.prompt;
+            handleSend();
+        });
+        promptGrid.appendChild(btn);
+        return btn;
+    });
+
+    /* --------------------------------------------------- Backend status */
+
+    let backendUrl = localStorage.getItem('mf_rag_backend_url');
+    if (backendUrl === null) {
+        const local = ['localhost', '127.0.0.1'].includes(window.location.hostname);
+        backendUrl = local ? 'http://localhost:8080' : '';
     }
     apiInput.value = backendUrl;
 
-    // Listen connection configuration changes
-    apiInput.addEventListener("input", (e) => {
-        backendUrl = e.target.value.trim().replace(/\/$/, "");
-        localStorage.setItem("mf_rag_backend_url", backendUrl);
-        verifyBackendStatus();
-    });
+    function setStatus(state, text) {
+        statusEl.setAttribute('data-state', state);
+        statusText.textContent = text;
+    }
 
-    // Check backend connection health
     async function verifyBackendStatus() {
         if (!backendUrl) {
-            statusDot.className = "w-2 h-2 rounded-full bg-error-container status-indicator-dot";
-            statusText.textContent = "Offline (Configure URL)";
+            setStatus('offline', 'Not configured');
             return;
         }
-
-        statusText.textContent = "Connecting...";
+        setStatus('pending', 'Connecting…');
         try {
-            const res = await fetch(`${backendUrl}/health`, { method: "GET", mode: "cors" });
-            if (res.ok) {
-                statusDot.className = "w-2 h-2 rounded-full bg-primary-container status-indicator-dot pulse-badge";
-                statusText.textContent = "System Online";
-            } else {
-                statusDot.className = "w-2 h-2 rounded-full bg-error-container status-indicator-dot";
-                statusText.textContent = "Offline (API Error)";
-            }
+            const res = await fetch(`${backendUrl}/health`, { method: 'GET', mode: 'cors' });
+            setStatus(res.ok ? 'online' : 'offline', res.ok ? 'Online' : 'Backend error');
         } catch (e) {
-            statusDot.className = "w-2 h-2 rounded-full bg-error-container status-indicator-dot";
-            statusText.textContent = "Offline (Unreachable)";
+            setStatus('offline', 'Unreachable');
         }
     }
+
+    let statusDebounce;
+    apiInput.addEventListener('input', (e) => {
+        backendUrl = e.target.value.trim().replace(/\/+$/, '');
+        localStorage.setItem('mf_rag_backend_url', backendUrl);
+        clearTimeout(statusDebounce);
+        statusDebounce = setTimeout(verifyBackendStatus, 400);
+    });
 
     verifyBackendStatus();
 
-    // Toggle Connection Settings Popover
-    const settingsToggleBtn = document.getElementById("settings-toggle-btn");
-    const settingsPopover = document.getElementById("settings-popover");
+    /* ------------------------------------------------ Settings popover */
 
-    if (settingsToggleBtn && settingsPopover) {
-        settingsToggleBtn.addEventListener("click", (e) => {
-            e.stopPropagation();
-            settingsPopover.classList.toggle("hidden");
-        });
-
-        // Hide settings popover when clicking outside of it
-        document.addEventListener("click", (e) => {
-            if (!settingsPopover.contains(e.target) && !settingsToggleBtn.contains(e.target)) {
-                settingsPopover.classList.add("hidden");
-            }
-        });
+    function setSettings(open) {
+        settingsPop.hidden = !open;
+        settingsBtn.setAttribute('aria-expanded', String(open));
     }
-
-    // Scheme Filtering is disabled for now (passive tracking list only)
-    let activeSchemeFilter = null;
-
-    // Binds suggestions button click prompt
-    const suggestionBtns = document.querySelectorAll(".quick-prompt-btn");
-    suggestionBtns.forEach(btn => {
-        btn.addEventListener("click", () => {
-            const promptText = btn.getAttribute("data-prompt");
-            userInput.value = promptText;
-            handleSend();
-        });
+    settingsBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        setSettings(settingsPop.hidden);
     });
-
-    // Form query submit handler
-    queryForm.addEventListener("submit", (e) => {
-        e.preventDefault();
-        handleSend();
-    });
-
-    // Create custom bubble element based on message type
-    function createMessageBubble(content, isUser = false, type = 'normal', sourceUrl = 'N/A') {
-        const wrapper = document.createElement('div');
-        wrapper.className = `flex ${isUser ? 'justify-end' : 'justify-start'} animate-in fade-in slide-in-from-bottom-4 duration-300`;
-        
-        if (isUser) {
-            wrapper.innerHTML = `
-                <div class="max-w-[80%] bg-[#1C2541] dark:bg-primary-container text-white dark:text-on-primary-container p-4 rounded-2xl rounded-tr-none shadow-md">
-                    <p class="text-body-md">${content}</p>
-                </div>
-            `;
-        } else {
-            if (type === 'refusal') {
-                wrapper.innerHTML = `
-                    <div class="max-w-[85%] bg-error-container/20 border border-error/20 p-5 rounded-2xl rounded-tl-none shadow-sm flex gap-4">
-                        <span class="material-symbols-outlined text-error" style="font-variation-settings: 'FILL' 1;">warning</span>
-                        <div class="flex flex-col gap-2">
-                            <p class="text-on-error-container font-label-bold">Access Restricted</p>
-                            <p class="text-on-error-container/80 text-body-md">${content}</p>
-                        </div>
-                    </div>
-                `;
-            } else if (type === 'security') {
-                wrapper.innerHTML = `
-                    <div class="max-w-[85%] bg-error-container/40 border border-error p-5 rounded-2xl rounded-tl-none shadow-md flex gap-4">
-                        <span class="material-symbols-outlined text-error" style="font-variation-settings: 'FILL' 1;">security</span>
-                        <div class="flex flex-col gap-2">
-                            <p class="text-on-error-container font-label-bold">Security Alert</p>
-                            <p class="text-on-error-container/80 text-body-md">${content}</p>
-                        </div>
-                    </div>
-                `;
-            } else {
-                // Normal factual RAG response layout with metadata & citation source
-                const today = new Date().toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
-                const citationPill = sourceUrl && sourceUrl !== 'N/A' 
-                    ? `
-                    <div class="flex items-center gap-2 px-3 py-1 bg-surface-container-high dark:bg-slate-700 rounded-full max-w-[280px] sm:max-w-md overflow-hidden">
-                        <span class="material-symbols-outlined text-[14px] text-on-surface-variant dark:text-gray-300">link</span>
-                        <a href="${sourceUrl}" target="_blank" class="text-[11px] font-label-bold uppercase tracking-wider text-on-surface-variant dark:text-gray-300 hover:text-primary dark:hover:text-primary-container truncate">Source: ${sourceUrl}</a>
-                    </div>
-                    `
-                    : `
-                    <div class="flex items-center gap-2 px-3 py-1 bg-surface-container-high dark:bg-slate-700 rounded-full">
-                        <span class="material-symbols-outlined text-[14px] text-on-surface-variant dark:text-gray-300">link</span>
-                        <span class="text-[11px] font-label-bold uppercase tracking-wider text-on-surface-variant dark:text-gray-300">Source: Verified PDF</span>
-                    </div>
-                    `;
-
-                wrapper.innerHTML = `
-                    <div class="max-w-[85%] bg-surface-container dark:bg-slate-800 border border-outline-variant dark:border-white/10 p-6 rounded-3xl rounded-tl-none shadow-sm flex flex-col gap-4">
-                        <p class="text-on-surface dark:text-gray-100 text-body-md leading-relaxed">${content}</p>
-                        <div class="pt-4 border-t border-outline-variant dark:border-white/10 flex flex-wrap justify-between items-center gap-3">
-                            ${citationPill}
-                            <span class="text-[11px] text-on-surface-variant/60 dark:text-gray-400 font-label-sm italic">Last updated: ${today}</span>
-                        </div>
-                    </div>
-                `;
-            }
+    document.addEventListener('click', (e) => {
+        if (!settingsPop.hidden && !settingsPop.contains(e.target) && !settingsBtn.contains(e.target)) {
+            setSettings(false);
         }
-        return wrapper;
+    });
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') { setSettings(false); setNav(false); }
+    });
+
+    /* ----------------------------------------------------- Message bits */
+
+    function userBubble(text) {
+        const row = el('div', 'msg msg--user fade-in');
+        row.appendChild(el('div', 'bubble-user', text));
+        return row;
     }
 
-    // Create typing bubble loader
-    function appendLoader() {
-        const loaderId = "loader_" + Date.now();
-        const wrapper = document.createElement('div');
-        wrapper.className = "flex justify-start animate-in fade-in duration-300";
-        wrapper.setAttribute("id", loaderId);
-        
-        wrapper.innerHTML = `
-            <div class="max-w-[85%] bg-surface-container dark:bg-slate-800 border border-outline-variant dark:border-white/10 p-4 rounded-3xl rounded-tl-none shadow-sm flex items-center gap-1.5">
-                <span class="w-2 h-2 bg-on-surface-variant/40 dark:bg-white/40 rounded-full animate-bounce"></span>
-                <span class="w-2 h-2 bg-on-surface-variant/40 dark:bg-white/40 rounded-full animate-bounce [animation-delay:0.2s]"></span>
-                <span class="w-2 h-2 bg-on-surface-variant/40 dark:bg-white/40 rounded-full animate-bounce [animation-delay:0.4s]"></span>
-            </div>
-        `;
-        
-        chatHistory.appendChild(wrapper);
-        scrollToBottom();
-        return loaderId;
+    function citation(sourceUrl) {
+        const href = safeHttpUrl(sourceUrl);
+        if (!href) {
+            const span = el('span', 'cite');
+            span.appendChild(icon('description'));
+            span.appendChild(el('span', 'cite-url', 'No source document'));
+            return span;
+        }
+        const link = el('a', 'cite');
+        link.href = href;
+        link.target = '_blank';
+        link.rel = 'noopener noreferrer';   // deny the opened tab access to window.opener
+        link.appendChild(icon('link'));
+        link.appendChild(el('span', 'cite-url', href.replace(/^https?:\/\/(www\.)?/, '')));
+        return link;
     }
 
-    // Scroll chat area to bottom
+    // One card shape for every response; only the colour role and label change.
+    function botCard(text, status, sourceUrl) {
+        const state = STATES[status] || FALLBACK_STATE;
+        const row = el('div', `msg msg--${state.kind} fade-in`);
+        const card = el('div', 'card-bot');
+
+        const head = el('div', 'card-head');
+        head.appendChild(icon(state.icon, null, true));
+        head.appendChild(el('span', 'card-label', state.label));
+        card.appendChild(head);
+
+        card.appendChild(el('div', 'card-body', text));
+
+        // A citation footer only makes sense for an answer drawn from a document.
+        if (state.kind === 'verified') {
+            const foot = el('div', 'card-foot');
+            foot.appendChild(citation(sourceUrl));
+            foot.appendChild(el('span', 'timestamp',
+                new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })));
+            card.appendChild(foot);
+        }
+
+        row.appendChild(card);
+        return row;
+    }
+
+    function loadingCard() {
+        const row = el('div', 'msg fade-in');
+        const card = el('div', 'card-bot');
+        const dots = el('div', 'typing');
+        dots.appendChild(el('span'));
+        dots.appendChild(el('span'));
+        dots.appendChild(el('span'));
+        card.appendChild(dots);
+        row.appendChild(card);
+        return row;
+    }
+
     function scrollToBottom() {
-        chatContainer.scrollTo({
-            top: chatContainer.scrollHeight,
-            behavior: "smooth"
-        });
+        chatScroll.scrollTo({ top: chatScroll.scrollHeight, behavior: 'smooth' });
     }
 
-    // Handles query dispatching
+    /* ------------------------------------------------------ Send flow */
+
+    let inFlight = 0;
+
+    function setBusy(busy) {
+        input.disabled = busy;
+        sendBtn.disabled = busy;
+        // The quick-prompt buttons used to stay live while a request was in
+        // flight, which let a second question start and land out of order.
+        promptButtons.forEach(b => { b.disabled = busy; });
+        if (!busy) input.focus();
+    }
+
     async function handleSend() {
-        const queryText = userInput.value.trim();
-        if (!queryText) return;
+        const query = input.value.trim();
+        if (!query || inFlight > 0) return;
 
-        // Reset user query input
-        userInput.value = "";
+        input.value = '';
+        welcome.hidden = true;
 
-        // Hide welcome block
-        if (welcomeState && !welcomeState.classList.contains("hidden")) {
-            welcomeState.classList.add("hidden");
-        }
+        chatHistory.appendChild(userBubble(query));
 
-        // 1. Render User Message
-        chatHistory.appendChild(createMessageBubble(queryText, true));
+        // This question's reserved slot. The answer replaces THIS node, so it
+        // can never be rendered underneath somebody else's question.
+        const slot = loadingCard();
+        chatHistory.appendChild(slot);
         scrollToBottom();
 
-        // 2. Render Loading dots
-        const loaderId = appendLoader();
+        inFlight += 1;
+        setBusy(true);
 
-        // Disable input during transaction
-        userInput.disabled = true;
-        sendBtn.disabled = true;
+        const settle = (node) => {
+            slot.replaceWith(node);
+            scrollToBottom();
+        };
 
-        // 3. Dispatch RAG request
         try {
             if (!backendUrl) {
-                throw new Error("RAG API connection URL is not configured. Please locate sidebar and enter target URL.");
+                throw new Error('No backend URL configured. Open settings (gear icon) and enter one.');
             }
 
             const res = await fetch(`${backendUrl}/api/query`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                mode: "cors",
-                body: JSON.stringify({
-                    query: queryText,
-                    scheme_filter: activeSchemeFilter
-                })
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                mode: 'cors',
+                body: JSON.stringify({ query })
             });
-
-            // Dismiss loader
-            const loader = document.getElementById(loaderId);
-            if (loader) loader.remove();
-
-            userInput.disabled = false;
-            sendBtn.disabled = false;
-            userInput.focus();
 
             if (res.ok) {
                 const data = await res.json();
-                
-                // Switch output bubble formatting based on status triggers
-                if (data.status === "blocked_pii") {
-                    chatHistory.appendChild(createMessageBubble(data.answer, false, "security"));
-                } else if (data.status === "blocked_advisory" || data.status === "failed_validation" || data.status === "no_context") {
-                    chatHistory.appendChild(createMessageBubble(data.answer, false, "refusal"));
-                } else {
-                    chatHistory.appendChild(createMessageBubble(data.answer, false, "normal", data.source));
-                }
+                settle(botCard(data.answer, data.status, data.source));
+            } else if (res.status === 429) {
+                const data = await res.json().catch(() => null);
+                settle(botCard(
+                    (data && data.answer) || 'Too many requests. Please wait a moment and try again.',
+                    'rate_limited'));
+            } else if (res.status === 422) {
+                settle(botCard(
+                    'That question could not be processed. Please keep it under 500 characters.',
+                    'client_error'));
             } else {
-                chatHistory.appendChild(createMessageBubble("Our RAG services are currently busy. Please consult the official website: https://www.hdfcfund.com", false, "refusal", "https://www.hdfcfund.com"));
+                settle(botCard(
+                    'The service is unavailable right now. Please consult the official AMC website.',
+                    'retrieval_error'));
             }
         } catch (error) {
-            // Dismiss loader
-            const loader = document.getElementById(loaderId);
-            if (loader) loader.remove();
-
-            userInput.disabled = false;
-            sendBtn.disabled = false;
-            userInput.focus();
-
-            chatHistory.appendChild(createMessageBubble(`Connection Error: ${error.message || "Failed to contact RAG backend API server."}`, false, "refusal"));
+            settle(botCard(
+                error.message || 'Could not reach the backend API.',
+                'client_error'));
+        } finally {
+            inFlight -= 1;
+            setBusy(false);
         }
-        
-        scrollToBottom();
     }
+
+    form.addEventListener('submit', (e) => {
+        e.preventDefault();
+        handleSend();
+    });
 });

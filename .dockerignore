@@ -1,0 +1,20 @@
+# Secrets must never be baked into an image layer
+.env
+
+# Version control and CI
+.git
+.github
+.gitignore
+
+# Generated data: the index is downloaded at startup by scripts/fetch_index.sh
+data/
+
+# Python caches and test tooling
+__pycache__/
+*.py[cod]
+.pytest_cache/
+tests/
+
+# Docs and local editor cruft
+docs/
+.DS_Store

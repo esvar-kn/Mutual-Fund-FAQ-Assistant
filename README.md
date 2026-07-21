@@ -1,4 +1,5 @@
-# Mutual Fund FAQ Assistant (Decoupled RAG)
+# FundFacts (Decoupled RAG)
+> **Verified scheme data, never advice.**
 
 A highly compliant, dynamic, facts-only Retrieval-Augmented Generation (RAG) chatbot that retrieves objective information from Asset Management Company (AMC) scheme pages. 
 
@@ -82,13 +83,24 @@ Mutual-Fund-FAQ-Assistant/
 
 To fetch the latest scheme data, cache raw HTML files, preprocess them into structured JSON, and re-index the Chroma vector store, run:
 ```bash
-python3 src/ingestion/ingestion.py
+python3 -m src.ingestion.ingestion
 ```
 
 ### Ingestion Pipeline Stages:
 1. **Raw Storage**: Downloads the webpage HTML dynamically and caches it under `data/Corpus/raw/{amc_slug}/{scheme_slug}.html`.
 2. **Processed Storage**: BeautifulSoup parses the HTML, extracts metrics (NAV, Expense Ratio, AUM, Min SIP, Exit Load, Fund Managers), and saves a structured JSON file to `data/Corpus/processed/{amc_slug}/{scheme_slug}.json`.
 3. **Indexing**: The vector indexer reads the JSON files, partitions text into logical paragraph chunks (~400-500 tokens), embeds them using local BGE embeddings (`BAAI/bge-small-en-v1.5`), and indexes them in ChromaDB.
+
+### Where the index lives
+
+`data/chromadb/` and `data/Corpus/` are **generated artifacts and are not tracked in git** — committing them added several MB of binary churn to history every weekday.
+
+Instead, the daily workflow rebuilds the index, verifies it is non-empty, and publishes `chromadb.tar.gz` to a rolling GitHub release tagged **`data-latest`**. Because the tag is reused, exactly one copy of the data is stored and history never grows.
+
+- **Locally**: run `python3 -m src.ingestion.ingestion` once to build your own index.
+- **In the container**: `scripts/fetch_index.sh` runs at startup and downloads the published index. It is a no-op if an index is already present, and it exits non-zero if the download fails, so the server never starts against a missing index.
+
+Point the fetch at a different source with `INDEX_URL`, or `INDEX_REPO` / `INDEX_TAG`. Set `GITHUB_TOKEN` only if the repository is private.
 
 ---
 
@@ -105,6 +117,37 @@ python3 src/ingestion/ingestion.py
    python3 -m http.server 3000 --directory frontend
    ```
    Navigate to `http://localhost:3000/` in your browser. Configure the **Backend API URL** to `http://localhost:8080` in the Connection Settings popover in the top right header (gear icon) to verify status becomes **System Online**.
+
+---
+
+## 🧪 Running Tests
+
+```bash
+python3 -m pytest tests/ -v
+```
+
+The suite stubs out ChromaDB and Groq, so it needs no vector index, no API key, and no network. It covers the PII and advisory guardrails, sentence counting, citation validation (including hallucinated-source rejection), API error handling, input limits, rate limiting, and CORS.
+
+---
+
+## ⚙️ Runtime Configuration
+
+Copy `.env.example` to `.env` and adjust as needed. Beyond `GROQ_API_KEY`:
+
+| Variable | Default | Purpose |
+| --- | --- | --- |
+| `ALLOWED_ORIGINS` | `http://localhost:3000,http://127.0.0.1:3000` | Comma-separated browser origins permitted to call the API. **Set this to your deployed frontend origin in production** — the default blocks it. |
+| `RATE_LIMIT_REQUESTS` | `20` | Requests allowed per client IP per window. |
+| `RATE_LIMIT_WINDOW_SECONDS` | `60` | Length of the rate-limit window. |
+| `MAX_QUERY_LENGTH` | `500` | Longest accepted query; longer requests get a `422`. |
+| `GROQ_TIMEOUT_SECONDS` | `10` | Cap on a single Groq call. On timeout the API returns its `llm_error` fallback rather than hanging. Worst-case wall time is this value x (`GROQ_MAX_RETRIES` + 1). |
+| `GROQ_MAX_RETRIES` | `1` | Retries the Groq client attempts before giving up. |
+
+> **Note:** rate limiting is in-process, so limits apply per worker and reset on restart. It curbs casual abuse of the paid Groq endpoint but should be backed by a shared limiter or edge rule if you scale beyond one instance.
+
+### Performance note
+
+The embedding model and ChromaDB connection are loaded **once per process** and reused. The first request after boot pays a one-time ~8s warm-up; every request after that spends ~0.08s in retrieval. Expect the Groq call to dominate the remaining latency.
 
 ---
 
@@ -126,7 +169,7 @@ To add a new scheme (e.g. *HDFC Flexi Cap Fund*), open [config/schemes.json](fil
   }
 }
 ```
-Run `python3 src/ingestion/ingestion.py` to crawl, process, and index the new scheme.
+Run `python3 -m src.ingestion.ingestion` to crawl, process, and index the new scheme.
 
 ### 2. Adding a New Asset Management Company (AMC)
 To support a completely new AMC (e.g. *SBI Mutual Fund*), open [config/schemes.json](file:///Users/esvarnatarajan/Desktop/Airtribe/Projects/Mutual-Fund-FAQ-Assistant/config/schemes.json) and add a new entry block to the `amcs` array:
@@ -147,7 +190,7 @@ To support a completely new AMC (e.g. *SBI Mutual Fund*), open [config/schemes.j
   ]
 }
 ```
-Run `python3 src/ingestion/ingestion.py` to create the folders `data/Corpus/raw/sbi_mutual_fund/` and `data/Corpus/processed/sbi_mutual_fund/`, fetch raw HTML, save processed JSON files, and append SBI vector chunks into the collection.
+Run `python3 -m src.ingestion.ingestion` to create the folders `data/Corpus/raw/sbi_mutual_fund/` and `data/Corpus/processed/sbi_mutual_fund/`, fetch raw HTML, save processed JSON files, and append SBI vector chunks into the collection.
 
 ### 3. Upgrading Embedding or LLM Models
 To switch models, update the global properties at the top of [config/schemes.json](file:///Users/esvarnatarajan/Desktop/Airtribe/Projects/Mutual-Fund-FAQ-Assistant/config/schemes.json):

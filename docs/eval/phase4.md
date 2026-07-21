@@ -15,7 +15,7 @@ This document defines the detailed evaluation standards, testing procedures, and
 ## 2. Detailed Success Criteria
 
 ### 2.1. UI Layout & Rendering
-- Loading the UI must render the main header *"Mutual Fund Facts-Only FAQ Assistant"*.
+- Loading the UI must render the main header *"FundFacts"*.
 - The sidebar must show a prominent compliance disclaimer card detailing the facts-only nature of the tool.
 - The sidebar must include a **Connection Settings** input field `#api-url-input` to set the backend URL.
 

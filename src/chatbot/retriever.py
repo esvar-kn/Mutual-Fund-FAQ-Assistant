@@ -1,32 +1,11 @@
 import chromadb
 from sentence_transformers import SentenceTransformer
-from pathlib import Path
 
-# Try-except absolute/local import for configuration resilience
-try:
-    from src.config import (
-        DB_DIR,
-        EMBEDDING_MODEL_NAME,
-        CHROMA_COLLECTION_NAME
-    )
-except ModuleNotFoundError:
-    import sys
-    current_dir = Path(__file__).resolve().parent
-    sys.path.append(str(current_dir.parent.parent))
-    sys.path.append(str(current_dir.parent))
-    
-    try:
-        from src.config import (
-            DB_DIR,
-            EMBEDDING_MODEL_NAME,
-            CHROMA_COLLECTION_NAME
-        )
-    except ModuleNotFoundError:
-        # Defaults if config cannot be loaded
-        BASE_DIR = Path(__file__).resolve().parent.parent.parent
-        DB_DIR = BASE_DIR / "data" / "chromadb"
-        EMBEDDING_MODEL_NAME = "BAAI/bge-small-en-v1.5"
-        CHROMA_COLLECTION_NAME = "mutual_fund_corpus"
+from src.config import (
+    DB_DIR,
+    EMBEDDING_MODEL_NAME,
+    CHROMA_COLLECTION_NAME
+)
 
 class BGEEmbeddingFunction:
     """Custom embedding function for ChromaDB utilizing BGE model."""

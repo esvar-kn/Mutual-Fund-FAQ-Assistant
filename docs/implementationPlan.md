@@ -1,6 +1,6 @@
-# Phase-Wise Implementation Plan: Decoupled Mutual Fund FAQ Assistant
+# Phase-Wise Implementation Plan: Decoupled FundFacts
 
-This implementation plan breaks down the development of the Mutual Fund FAQ Assistant into structured, sequential phases, separating the backend FastAPI server (Railway) from the static web client (Vercel). It aligns with the architecture specified in [architecture.md](file:///Users/esvarnatarajan/Desktop/Airtribe/Projects/Mutual-Fund-FAQ-Assistant/docs/architecture.md).
+This implementation plan breaks down the development of FundFacts into structured, sequential phases, separating the backend FastAPI server (Railway) from the static web client (Vercel). It aligns with the architecture specified in [architecture.md](file:///Users/esvarnatarajan/Desktop/Airtribe/Projects/Mutual-Fund-FAQ-Assistant/docs/architecture.md).
 
 ---
 

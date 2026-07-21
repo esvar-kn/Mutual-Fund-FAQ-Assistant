@@ -1,6 +1,6 @@
 # Project Edge Cases & Mitigation Strategies
 
-This document lists potential edge cases, security risks, and error scenarios for the **Mutual Fund FAQ Assistant** (Facts-Only Q&A), along with specific code-level mitigation strategies for each module.
+This document lists potential edge cases, security risks, and error scenarios for **FundFacts** (Facts-Only Q&A), along with specific code-level mitigation strategies for each module.
 
 ---
 

@@ -31,3 +31,13 @@ MANIFEST
 .DS_Store
 Thumbs.db
 
+# Generated data artifacts.
+# The vector index and scraped corpus are rebuilt daily by CI and published as
+# release assets (see .github/workflows/daily_ingestion.yml). Committing them
+# added several MB of binary churn to git history every weekday.
+data/chromadb/
+data/Corpus/
+
+# Test / tooling caches
+.pytest_cache/
+

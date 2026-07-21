@@ -115,6 +115,35 @@ if not SCHEMES_LIST:
             "category": SCHEME_CATEGORIES.get(name, "N/A")
         })
 
+# CORS: comma-separated list of allowed browser origins.
+# Defaults to local dev only -- set ALLOWED_ORIGINS in the deploy environment
+# to the real frontend origin(s), e.g. "https://my-app.vercel.app".
+# "*" is honoured but disables credentialed requests (browsers reject that combo).
+ALLOWED_ORIGINS = [
+    o.strip() for o in os.getenv(
+        "ALLOWED_ORIGINS",
+        "http://localhost:3000,http://127.0.0.1:3000"
+    ).split(",") if o.strip()
+]
+
+# Rate limiting for /api/query (each request costs a paid Groq call).
+# In-process and per-instance: see src/api.py for the caveats.
+RATE_LIMIT_REQUESTS = int(os.getenv("RATE_LIMIT_REQUESTS", "20"))
+RATE_LIMIT_WINDOW_SECONDS = int(os.getenv("RATE_LIMIT_WINDOW_SECONDS", "60"))
+
+# Reject oversized prompts before they reach the retriever or the LLM.
+MAX_QUERY_LENGTH = int(os.getenv("MAX_QUERY_LENGTH", "500"))
+
+# Groq call budget. Measured latency is normally 0.3-0.6s, but the upstream has
+# been observed stalling for 25s+; without a cap the user just waits.
+# On timeout the endpoint falls back to its "consult the official website" reply.
+#
+# Worst-case wall time is GROQ_TIMEOUT_SECONDS x (GROQ_MAX_RETRIES + 1), so the
+# defaults below bound a request at ~20s. Set GROQ_MAX_RETRIES=0 to halve that
+# at the cost of failing on the first transient blip.
+GROQ_TIMEOUT_SECONDS = float(os.getenv("GROQ_TIMEOUT_SECONDS", "10"))
+GROQ_MAX_RETRIES = int(os.getenv("GROQ_MAX_RETRIES", "1"))
+
 # Ingestion / Scraping configurations
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
@@ -122,6 +151,16 @@ HEADERS = {
 
 # Embedding & Vector DB Configs
 CHROMA_COLLECTION_NAME = "mutual_fund_corpus"
+
+# Retrieval relevance cutoff.
+# Chroma's default space is squared L2. Because BGE embeddings are normalised,
+# squared_l2 == 2 - 2*cosine, so this range is 0 (identical) to 2 (opposite)
+# and 1.1 corresponds to roughly 0.45 cosine similarity. Queries whose best
+# chunk scores above this are treated as out-of-corpus and refused.
+RETRIEVAL_DISTANCE_THRESHOLD = 1.1
+
+# Number of context chunks passed to the LLM per query.
+RETRIEVAL_TOP_K = 4
 
 # Refusal redirect portals
 AMFI_EDUCATIONAL_URL = "https://www.amfiindia.com/investor-corner"

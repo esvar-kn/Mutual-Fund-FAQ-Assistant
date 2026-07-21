@@ -1,6 +1,6 @@
 # Deployment Plan: Split Frontend & Backend Architecture
 
-This document guides you through deploying the **Mutual Fund FAQ Assistant** using a decoupled architecture:
+This document guides you through deploying **FundFacts** using a decoupled architecture:
 1. **Backend API (RAG Engine & Database)**: Deployed on **Railway** via Docker.
 2. **Frontend UI (Chat Dashboard)**: Deployed on **Vercel** as a static single-page app.
 
@@ -32,7 +32,7 @@ Railway detects the `Dockerfile` at the root of the project to automatically bui
    - It will run: `uvicorn src.api:app --host 0.0.0.0 --port $PORT`
 4. **Copy Public Domain**:
    - In the **Settings** tab for your Railway service, scroll down to **Environment** and click **Generate Domain** (or copy your custom domain).
-   - The API endpoint URL will look like: `https://mutual-fund-faq-assistant-production.up.railway.app`
+   - The API endpoint URL will look like: `https://fundfacts-production.up.railway.app`
 
 ---
 
@@ -51,7 +51,7 @@ Vercel reads `vercel.json` to route incoming web traffic directly to the static 
 3. **Deploy**:
    - Click **Deploy**. Vercel will build and launch your static frontend in seconds.
 4. **Copy Frontend Domain**:
-   - Vercel generates a public URL, such as: `https://mutual-fund-faq-assistant.vercel.app`
+   - Vercel generates a public URL, such as: `https://fundfacts.vercel.app`
 
 ---
 
@@ -61,6 +61,6 @@ To establish communication between your deployed Vercel frontend and Railway bac
 
 1. Open your Vercel deployment URL in a web browser.
 2. Locate the **⚙️ Connection Settings** card in the left sidebar.
-3. Paste your public **Railway Backend URL** (e.g. `https://mutual-fund-faq-assistant-production.up.railway.app`) into the text box.
+3. Paste your public **Railway Backend URL** (e.g. `https://fundfacts-production.up.railway.app`) into the text box.
 4. The system status indicator in the top-right header will dynamically query the backend health check (`GET /health`) and transition to a green **Online** dot once connected!
 5. This settings configuration is persisted securely in your browser's `localStorage` (no rebuilds required if the backend URL changes).

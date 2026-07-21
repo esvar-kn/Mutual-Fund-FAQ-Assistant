@@ -1,20 +1,8 @@
 import os
 from dotenv import load_dotenv
 
-# Try-except absolute/local import for configuration resilience
-try:
-    from src.chatbot.retriever import MutualFundRetriever
-    from src.chatbot.engine import GroqChatEngine
-except ModuleNotFoundError:
-    import sys
-    from pathlib import Path
-    current_dir = Path(__file__).resolve().parent
-    # Add project root and src/ to search path
-    sys.path.append(str(current_dir.parent.parent))
-    sys.path.append(str(current_dir.parent))
-    
-    from src.chatbot.retriever import MutualFundRetriever
-    from src.chatbot.engine import GroqChatEngine
+from src.chatbot.retriever import MutualFundRetriever
+from src.chatbot.engine import GroqChatEngine
 
 def run_chatbot_test():
     load_dotenv()
